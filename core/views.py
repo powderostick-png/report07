@@ -1,7 +1,9 @@
-﻿import csv
+import csv
 import io
 import json
+import os
 import re
+import uuid
 from json import JSONDecodeError
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
@@ -9,6 +11,7 @@ from urllib.request import Request, urlopen
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.http import HttpResponse, JsonResponse
+from django.utils import timezone
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_GET, require_POST
 
@@ -16,6 +19,9 @@ from .models import ShippingInformation
 
 
 TRACKING_SHEET_ID = "1oi6ZpuSVEwbYjYg1LbKRXeP0DZvFOpaxa6jxsm2Y7Mo"
+SUBMISSIONS_WEBHOOK_URL = os.getenv("SUBMISSIONS_WEBHOOK_URL", "")
+SUBMISSIONS_WEBHOOK_SECRET = os.getenv("SUBMISSIONS_WEBHOOK_SECRET", "")
+
 TRACKING_SHEET_SOURCES = getattr(
     settings,
     "TRACKING_SHEET_SOURCES",
@@ -150,6 +156,58 @@ def _lookup_tracking_numbers_by_buyer_name(buyer_name):
     return found_buyer, latest_match["candidate"]["tracking_numbers"]
 
 
+def _build_submission_payload(data):
+    submitted_at = timezone.localtime(timezone.now()).strftime("%Y-%m-%d %H:%M:%S")
+    return {
+        "submittedAt": submitted_at,
+        "fullName": data["full_name"],
+        "accountName": data["account_name"],
+        "phone": data["phone"],
+        "country": data["country"],
+        "countryOther": data["country_other"],
+        "stateProvince": data["state_province"],
+        "city": data["city"],
+        "postalCode": data["postal_code"],
+        "fullShippingAddress": data["full_shipping_address"],
+        "cameraVersion": data["camera_version"],
+        "cameraVersionOther": data["camera_version_other"],
+        "notes": data["notes"],
+        "glsConfirm": "TRUE",
+        "source": "Website",
+        "submissionId": uuid.uuid4().hex,
+    }
+
+
+def _submit_to_google_sheet(submission):
+    if not SUBMISSIONS_WEBHOOK_SECRET:
+        raise ValueError("SUBMISSIONS_WEBHOOK_SECRET is not configured.")
+
+    payload = json.dumps(
+        {
+            "secret": SUBMISSIONS_WEBHOOK_SECRET,
+            "submission": submission,
+        }
+    ).encode("utf-8")
+    request = Request(
+        SUBMISSIONS_WEBHOOK_URL,
+        data=payload,
+        headers={
+            "Content-Type": "application/json; charset=utf-8",
+            "User-Agent": "Viltrox Sample Portal",
+        },
+        method="POST",
+    )
+
+    with urlopen(request, timeout=15) as response:
+        body = response.read().decode("utf-8", errors="replace")
+
+    result = json.loads(body or "{}")
+    if not result.get("ok"):
+        raise ValueError(result.get("error") or "Google Sheet webhook rejected the submission.")
+
+    return result
+
+
 @require_POST
 def create_shipping_information(request):
     try:
@@ -219,6 +277,28 @@ def create_shipping_information(request):
                 "errors": exc.message_dict,
             },
             status=400,
+        )
+
+    if SUBMISSIONS_WEBHOOK_URL:
+        submission = _build_submission_payload(data)
+        try:
+            _submit_to_google_sheet(submission)
+        except (HTTPError, TimeoutError, URLError, UnicodeDecodeError, JSONDecodeError, ValueError):
+            return JsonResponse(
+                {
+                    "message": "Could not save shipping information right now. Please try again later.",
+                    "errors": {"googleSheet": "Google Sheet submission failed."},
+                },
+                status=502,
+            )
+
+        return JsonResponse(
+            {
+                "id": submission["submissionId"],
+                "message": "Shipping information saved.",
+                "trackingUrl": "",
+            },
+            status=201,
         )
 
     shipping_information.save()
