@@ -154,6 +154,11 @@ async function handleTrackingLookup() {
     return
   }
 
+  const trackingWindow = window.open('about:blank', '_blank')
+  if (trackingWindow) {
+    trackingWindow.opener = null
+  }
+
   isTrackingLookupLoading.value = true
 
   try {
@@ -165,8 +170,18 @@ async function handleTrackingLookup() {
     if (response.ok && result.trackingNumber) {
       trackingLookupNumber.value = result.trackingNumber
       trackingLookupUrl.value = result.trackingUrl || `https://t.17track.net/en#nums=${encodeURIComponent(result.trackingNumber)}`
+      if (trackingWindow) {
+        trackingWindow.location.href = trackingLookupUrl.value
+      } else {
+        window.open(trackingLookupUrl.value, '_blank', 'noopener,noreferrer')
+      }
+    } else if (trackingWindow) {
+      trackingWindow.close()
     }
   } catch (error) {
+    if (trackingWindow) {
+      trackingWindow.close()
+    }
     trackingLookupMessage.value = 'Unable to connect to the server. Please try again later.'
   } finally {
     isTrackingLookupLoading.value = false
