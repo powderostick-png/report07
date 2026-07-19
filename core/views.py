@@ -1,5 +1,9 @@
+import csv
+import io
 import json
 from json import JSONDecodeError
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -9,6 +13,26 @@ from django.views.decorators.http import require_GET, require_POST
 
 from .models import ShippingInformation
 
+
+TRACKING_SHEET_ID = "1oi6ZpuSVEwbYjYg1LbKRXeP0DZvFOpaxa6jxsm2Y7Mo"
+TRACKING_SHEET_SOURCES = getattr(
+    settings,
+    "TRACKING_SHEET_SOURCES",
+    [
+        {
+            "name": "EU发货",
+            "gid": "503880334",
+            "buyer_name_column_index": 13,
+            "tracking_number_column_index": 26,
+        },
+        {
+            "name": "US发货",
+            "gid": "1969428090",
+            "buyer_name_column_index": 2,
+            "tracking_number_column_index": 17,
+        },
+    ],
+)
 
 FIELD_MAP = {
     "fullName": "full_name",
@@ -42,6 +66,59 @@ def _clean_text(payload, key):
     if value is None:
         return ""
     return str(value).strip()
+
+
+def _normalize_lookup_value(value):
+    return " ".join(str(value or "").strip().casefold().split())
+
+
+def _get_row_value(row, column_index):
+    if column_index >= len(row):
+        return ""
+    return str(row[column_index] or "").strip()
+
+
+def _split_tracking_numbers(value):
+    normalized = str(value or "").replace("\r", "\n").replace(",", "\n").replace(";", "\n")
+    return [part.strip() for part in normalized.splitlines() if part.strip()]
+
+
+def _tracking_sheet_csv_url(gid):
+    return f"https://docs.google.com/spreadsheets/d/{TRACKING_SHEET_ID}/gviz/tq?tqx=out:csv&gid={gid}"
+
+
+def _fetch_tracking_sheet_rows(source):
+    request = Request(_tracking_sheet_csv_url(source["gid"]), headers={"User-Agent": "Mozilla/5.0"})
+    with urlopen(request, timeout=12) as response:
+        charset = response.headers.get_content_charset() or "utf-8"
+        content = response.read().decode(charset, errors="replace")
+
+    return list(csv.reader(io.StringIO(content)))
+
+
+def _lookup_tracking_numbers_by_buyer_name(buyer_name):
+    target_name = _normalize_lookup_value(buyer_name)
+    found_buyer = False
+    tracking_numbers = []
+
+    for source in TRACKING_SHEET_SOURCES:
+        buyer_name_column_index = source["buyer_name_column_index"]
+        tracking_number_column_index = source["tracking_number_column_index"]
+
+        for row_number, row in enumerate(_fetch_tracking_sheet_rows(source), start=1):
+            if row_number == 1:
+                continue
+
+            row_buyer_name = _get_row_value(row, buyer_name_column_index)
+            if _normalize_lookup_value(row_buyer_name) != target_name:
+                continue
+
+            found_buyer = True
+            for tracking_number in _split_tracking_numbers(_get_row_value(row, tracking_number_column_index)):
+                if tracking_number not in tracking_numbers:
+                    tracking_numbers.append(tracking_number)
+
+    return found_buyer, tracking_numbers
 
 
 @require_POST
@@ -129,49 +206,53 @@ def create_shipping_information(request):
 
 @require_GET
 def lookup_tracking_status(request):
-    account_name = request.GET.get("accountName", "").strip()
-    if not account_name:
+    buyer_name = (request.GET.get("buyerName") or request.GET.get("accountName") or "").strip()
+    if not buyer_name:
         return JsonResponse(
             {
-                "status": "missing_account",
-                "message": "Please enter your account name or handle.",
+                "status": "missing_buyer_name",
+                "message": "Please enter your buyer name.",
             },
             status=400,
         )
 
-    account_without_at = account_name[1:] if account_name.startswith("@") else account_name
-    account_with_at = account_name if account_name.startswith("@") else f"@{account_name}"
-    request_record = (
-        ShippingInformation.objects.filter(account_name__iexact=account_name).first()
-        or ShippingInformation.objects.filter(account_name__iexact=account_with_at).first()
-        or ShippingInformation.objects.filter(account_name__iexact=account_without_at).first()
-    )
+    try:
+        found_buyer, tracking_numbers = _lookup_tracking_numbers_by_buyer_name(buyer_name)
+    except (HTTPError, TimeoutError, URLError, UnicodeDecodeError, csv.Error):
+        return JsonResponse(
+            {
+                "status": "sheet_unavailable",
+                "message": "Unable to check the tracking sheet right now. Please try again later.",
+            },
+            status=502,
+        )
 
-    if not request_record:
+    if not found_buyer:
         return JsonResponse(
             {
                 "status": "not_found",
-                "message": "We could not find a sample request for this account name.",
+                "message": "We could not find a shipment for this buyer name.",
             },
             status=404,
         )
 
-    if not request_record.tracking_number:
+    if not tracking_numbers:
         return JsonResponse(
             {
                 "status": "pending",
-                "message": "Your request is saved. The tracking number has not been uploaded yet.",
-                "submittedAt": request_record.created_at.isoformat(),
+                "message": "This buyer name was found, but the tracking number has not been uploaded yet.",
             }
         )
 
+    tracking_number = ", ".join(tracking_numbers)
     return JsonResponse(
         {
             "status": "ready",
             "message": "Tracking number found. You can open 17TRACK to view the latest logistics status.",
-            "trackingNumber": request_record.tracking_number,
-            "trackingUrl": request_record.tracking_url,
-            "submittedAt": request_record.created_at.isoformat(),
+            "buyerName": buyer_name,
+            "trackingNumber": tracking_number,
+            "trackingNumbers": tracking_numbers,
+            "trackingUrl": f"https://t.17track.net/en#nums={tracking_number}",
         }
     )
 
