@@ -1,4 +1,4 @@
-import csv
+﻿import csv
 import io
 import json
 from json import JSONDecodeError
@@ -20,13 +20,13 @@ TRACKING_SHEET_SOURCES = getattr(
     "TRACKING_SHEET_SOURCES",
     [
         {
-            "name": "EU发货",
+            "name": "EU鍙戣揣",
             "gid": "503880334",
             "buyer_name_column_index": 13,
             "tracking_number_column_index": 26,
         },
         {
-            "name": "US发货",
+            "name": "US鍙戣揣",
             "gid": "1969428090",
             "buyer_name_column_index": 2,
             "tracking_number_column_index": 17,
@@ -206,12 +206,12 @@ def create_shipping_information(request):
 
 @require_GET
 def lookup_tracking_status(request):
-    buyer_name = (request.GET.get("buyerName") or request.GET.get("accountName") or "").strip()
+    buyer_name = (request.GET.get("fullName") or request.GET.get("buyerName") or request.GET.get("accountName") or "").strip()
     if not buyer_name:
         return JsonResponse(
             {
                 "status": "missing_buyer_name",
-                "message": "Please enter your buyer name.",
+                "message": "Please enter your full name.",
             },
             status=400,
         )
@@ -231,7 +231,7 @@ def lookup_tracking_status(request):
         return JsonResponse(
             {
                 "status": "not_found",
-                "message": "We could not find a shipment for this buyer name.",
+                "message": "We could not find a shipment for this full name.",
             },
             status=404,
         )
@@ -240,7 +240,7 @@ def lookup_tracking_status(request):
         return JsonResponse(
             {
                 "status": "pending",
-                "message": "This buyer name was found, but the tracking number has not been uploaded yet.",
+                "message": "This full name was found, but the tracking number has not been uploaded yet.",
             }
         )
 
@@ -249,7 +249,7 @@ def lookup_tracking_status(request):
         {
             "status": "ready",
             "message": "Tracking number found. You can open 17TRACK to view the latest logistics status.",
-            "buyerName": buyer_name,
+            "fullName": buyer_name,
             "trackingNumber": tracking_number,
             "trackingNumbers": tracking_numbers,
             "trackingUrl": f"https://t.17track.net/en#nums={tracking_number}",

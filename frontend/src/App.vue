@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import { reactive, ref } from 'vue'
 import {
   Camera,
@@ -36,7 +36,7 @@ const errors = ref({})
 const isSubmitted = ref(false)
 const isSubmitting = ref(false)
 const submitError = ref('')
-const trackingLookupBuyerName = ref('')
+const trackingLookupFullName = ref('')
 const trackingLookupMessage = ref('')
 const trackingLookupNumber = ref('')
 const trackingLookupUrl = ref('')
@@ -144,20 +144,20 @@ async function handleSubmit() {
 }
 
 async function handleTrackingLookup() {
-  const buyerName = trackingLookupBuyerName.value.trim()
+  const fullName = trackingLookupFullName.value.trim()
   trackingLookupMessage.value = ''
   trackingLookupNumber.value = ''
   trackingLookupUrl.value = ''
 
-  if (!buyerName) {
-    trackingLookupMessage.value = 'Please enter your buyer name.'
+  if (!fullName) {
+    trackingLookupMessage.value = 'Please enter your full name.'
     return
   }
 
   isTrackingLookupLoading.value = true
 
   try {
-    const response = await fetch(`/api/tracking-lookup/?buyerName=${encodeURIComponent(buyerName)}`)
+    const response = await fetch(`/api/tracking-lookup/?fullName=${encodeURIComponent(fullName)}`)
     const result = await response.json().catch(() => ({}))
 
     trackingLookupMessage.value = result.message || 'Unable to check tracking status.'
@@ -382,11 +382,11 @@ async function handleTrackingLookup() {
           </div>
           <h2>Track your shipment</h2>
           <p>
-            After the team uploads your tracking number, use your buyer name to find the shipment status.
+            After the team uploads your tracking number, use your full name to find the shipment status.
           </p>
           <label>
-            <span>Buyer Name</span>
-            <input v-model.trim="trackingLookupBuyerName" type="text" placeholder="Jane Cooper" />
+            <span>Full Name</span>
+            <input v-model.trim="trackingLookupFullName" type="text" placeholder="Jane Cooper" />
           </label>
           <button class="lookup-button" type="button" :disabled="isTrackingLookupLoading" @click="handleTrackingLookup">
             {{ isTrackingLookupLoading ? 'Checking...' : 'Check tracking status' }}
