@@ -71,7 +71,7 @@ const requiredFields = [
   ['country', 'Country or region is required.'],
   ['city', 'City is required.'],
   ['postalCode', 'Postal code is required.'],
-  ['streetAddress', 'Full shipping address is required.'],
+  ['streetAddress', 'Address is required.'],
   ['cameraVersion', 'Camera version is required.'],
 ]
 
@@ -93,7 +93,7 @@ function validateForm() {
   }
 
   if (!form.glsConfirm) {
-    nextErrors.glsConfirm = 'Please confirm GLS delivery availability for European addresses.'
+    nextErrors.glsConfirm = 'Please confirm delivery.'
   }
 
   errors.value = nextErrors
@@ -221,7 +221,7 @@ async function handleTrackingLookup() {
           </span>
           <span>
             <ShieldCheck :size="18" />
-            Europe: GLS deliverable address required
+            GLS address required
           </span>
         </div>
       </div>
@@ -247,7 +247,7 @@ async function handleTrackingLookup() {
           </label>
 
           <label class="field">
-            <span>Account Name / Handle *</span>
+            <span>Account / Handle *</span>
             <span class="input-wrap">
               <Camera :size="18" />
               <input v-model.trim="form.accountName" type="text" placeholder="@yourchannel" />
@@ -286,10 +286,10 @@ async function handleTrackingLookup() {
           </label>
 
           <label class="field">
-            <span>State / Province</span>
+            <span>State / Region</span>
             <span class="input-wrap">
               <MapPin :size="18" />
-              <input v-model.trim="form.stateProvince" type="text" autocomplete="address-level1" placeholder="Optional" />
+              <input v-model.trim="form.stateProvince" type="text" autocomplete="address-level1" placeholder="State / Region" />
             </span>
           </label>
 
@@ -312,14 +312,13 @@ async function handleTrackingLookup() {
           </label>
 
           <label class="field">
-            <span>Full Shipping Address *</span>
+            <span>Address *</span>
             <span class="input-wrap">
               <MapPin :size="18" />
               <input
                 v-model.trim="form.streetAddress"
                 type="text"
                 autocomplete="street-address"
-                placeholder="Street, house number, apartment, company name"
               />
             </span>
             <small v-if="errors.streetAddress">{{ errors.streetAddress }}</small>
@@ -355,7 +354,7 @@ async function handleTrackingLookup() {
         <label class="confirm-line">
           <input v-model="form.glsConfirm" type="checkbox" />
           <span>
-            I confirm the address can receive GLS delivery if it is in Europe, and the address is written exactly as it should appear on the shipping label.
+            I confirm this address can receive GLS delivery if it is in Europe.
           </span>
         </label>
         <small v-if="errors.glsConfirm" class="checkbox-error">{{ errors.glsConfirm }}</small>
