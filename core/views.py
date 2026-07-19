@@ -1,6 +1,7 @@
 ﻿import csv
 import io
 import json
+import re
 from json import JSONDecodeError
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
@@ -20,13 +21,13 @@ TRACKING_SHEET_SOURCES = getattr(
     "TRACKING_SHEET_SOURCES",
     [
         {
-            "name": "EU鍙戣揣",
+            "name": "EU",
             "gid": "503880334",
             "buyer_name_column_index": 13,
             "tracking_number_column_index": 26,
         },
         {
-            "name": "US鍙戣揣",
+            "name": "US",
             "gid": "1969428090",
             "buyer_name_column_index": 2,
             "tracking_number_column_index": 17,
@@ -83,6 +84,21 @@ def _split_tracking_numbers(value):
     return [part.strip() for part in normalized.splitlines() if part.strip()]
 
 
+def _parse_order_date(order_number):
+    match = re.search(r"(?<!\d)(\d{6})(?!\d)", str(order_number or ""))
+    if not match:
+        return ""
+
+    date_code = match.group(1)
+    year = int(date_code[:2])
+    month = int(date_code[2:4])
+    day = int(date_code[4:6])
+    if not (1 <= month <= 12 and 1 <= day <= 31):
+        return ""
+
+    return f"20{year:02d}{month:02d}{day:02d}"
+
+
 def _tracking_sheet_csv_url(gid):
     return f"https://docs.google.com/spreadsheets/d/{TRACKING_SHEET_ID}/gviz/tq?tqx=out:csv&gid={gid}"
 
@@ -99,9 +115,9 @@ def _fetch_tracking_sheet_rows(source):
 def _lookup_tracking_numbers_by_buyer_name(buyer_name):
     target_name = _normalize_lookup_value(buyer_name)
     found_buyer = False
-    tracking_numbers = []
+    latest_match = None
 
-    for source in TRACKING_SHEET_SOURCES:
+    for source_index, source in enumerate(TRACKING_SHEET_SOURCES):
         buyer_name_column_index = source["buyer_name_column_index"]
         tracking_number_column_index = source["tracking_number_column_index"]
 
@@ -114,11 +130,24 @@ def _lookup_tracking_numbers_by_buyer_name(buyer_name):
                 continue
 
             found_buyer = True
-            for tracking_number in _split_tracking_numbers(_get_row_value(row, tracking_number_column_index)):
-                if tracking_number not in tracking_numbers:
-                    tracking_numbers.append(tracking_number)
+            candidate = {
+                "source_index": source_index,
+                "row_number": row_number,
+                "order_date": _parse_order_date(_get_row_value(row, 0)),
+                "tracking_numbers": _split_tracking_numbers(_get_row_value(row, tracking_number_column_index)),
+            }
+            candidate_key = (
+                candidate["order_date"],
+                candidate["source_index"],
+                candidate["row_number"],
+            )
+            if latest_match is None or candidate_key > latest_match["key"]:
+                latest_match = {"key": candidate_key, "candidate": candidate}
 
-    return found_buyer, tracking_numbers
+    if latest_match is None:
+        return found_buyer, []
+
+    return found_buyer, latest_match["candidate"]["tracking_numbers"]
 
 
 @require_POST
