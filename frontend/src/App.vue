@@ -43,22 +43,22 @@ const trackingLookupUrl = ref('')
 const isTrackingLookupLoading = ref(false)
 
 const countries = [
-  'Germany',
-  'France',
-  'Italy',
+  'United States',
+  'Canada',
+  'United Kingdom',
   'Spain',
+  'Germany',
+  'Australia',
+  'Italy',
+  'Austria',
+  'France',
   'Netherlands',
   'Belgium',
   'Poland',
-  'Austria',
   'Sweden',
   'Denmark',
   'Finland',
   'Portugal',
-  'United Kingdom',
-  'United States',
-  'Canada',
-  'Australia',
   'Other',
 ]
 
