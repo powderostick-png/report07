@@ -13,13 +13,10 @@ import {
   Sparkles,
   Truck,
   UserRound,
-  Zap,
 } from '@lucide/vue'
-import z1FlashImage from './assets/viltrox-z1-pro-flash.png'
 import viltroxLogo from './assets/viltrox-logo-white-cropped.png'
 
 const affiliateUrl = 'https://viltrox.com/pages/join-affiliate-tutorial'
-const flashProductUrl = 'https://viltrox.com/products/vintage-z1-pro-camera-flash?_pos=2&_sid=39103e3f5&_ss=r'
 
 const form = reactive({
   fullName: '',
@@ -208,7 +205,7 @@ async function handleTrackingLookup() {
           <PackageCheck :size="18" />
           Track
         </a>
-        <a href="#ig-flash">
+        <a :href="affiliateUrl" target="_blank" rel="noreferrer">
           <Sparkles :size="18" />
           Affiliate
         </a>
@@ -228,7 +225,7 @@ async function handleTrackingLookup() {
             <PackageCheck :size="19" />
             Track your shipment
           </a>
-          <a class="hero-button" href="#ig-flash">
+          <a class="hero-button" href="#affiliate">
             <Sparkles :size="19" />
             Earn commission
           </a>
@@ -431,66 +428,14 @@ async function handleTrackingLookup() {
           </div>
           <h2>Earn commission</h2>
           <p>
-            Turn flash content into commission.
+            Join the Viltrox Affiliate Program and earn commission while sharing products with your audience.
           </p>
-          <a class="side-link" href="#ig-flash">
-            View IG flash guide
+          <a class="side-link" :href="affiliateUrl" target="_blank" rel="noreferrer">
+            Join affiliate program
             <ExternalLink :size="17" />
           </a>
         </article>
       </aside>
-    </section>
-
-    <section id="ig-flash" class="flash-cta">
-      <div class="page-shell flash-shell">
-        <div class="flash-copy">
-          <p class="eyebrow">IG flash guide</p>
-          <h2>Turn flash posts into commission.</h2>
-          <p class="flash-lede">Show the flash. Share one tip. Keep the caption short.</p>
-
-          <div class="flash-rules" aria-label="IG flash content ideas">
-            <article class="flash-rule">
-              <span>Cover</span>
-              <strong>Show the flash.</strong>
-              <p>Product in the first frame.</p>
-            </article>
-
-            <article class="flash-rule">
-              <span>Caption</span>
-              <strong>Comment “Flash”.</strong>
-              <p>Short caption, clear CTA.</p>
-            </article>
-
-            <article class="flash-rule">
-              <span>Ideas</span>
-              <strong>Tips or comparison.</strong>
-              <p>Flash tips / on-camera vs off-camera.</p>
-            </article>
-          </div>
-
-          <div class="flash-actions">
-            <a class="submit-button flash-primary" :href="affiliateUrl" target="_blank" rel="noreferrer">
-              <Sparkles :size="19" />
-              Join affiliate program
-            </a>
-            <a class="hero-button flash-secondary" :href="flashProductUrl" target="_blank" rel="noreferrer">
-              <ExternalLink :size="18" />
-              View Z1 Pro Flash
-            </a>
-          </div>
-        </div>
-
-        <a class="flash-visual" :href="flashProductUrl" target="_blank" rel="noreferrer" aria-label="View Viltrox Z1 Pro Flash">
-          <div class="flash-card-top">
-            <Zap :size="22" />
-            Z1 Pro Flash
-          </div>
-          <img :src="z1FlashImage" alt="Viltrox Z1 Pro camera flash" />
-          <div class="flash-caption">
-            “Why use flash in daylight?”
-          </div>
-        </a>
-      </div>
     </section>
   </main>
 </template>
