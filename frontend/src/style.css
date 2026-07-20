@@ -208,6 +208,27 @@ h1 {
   background: #ffffff;
 }
 
+.hero-social-actions {
+  align-items: center;
+}
+
+.social-button {
+  position: relative;
+  width: 46px;
+  min-width: 46px;
+  padding: 0;
+}
+
+.social-mark {
+  position: absolute;
+  right: 7px;
+  bottom: 7px;
+  padding: 1px;
+  border-radius: 999px;
+  color: var(--accent);
+  background: #ffffff;
+}
+
 .hero-badges {
   display: flex;
   flex-wrap: wrap;
@@ -591,6 +612,15 @@ textarea::placeholder {
   .hero-button,
   .submit-button {
     width: 100%;
+  }
+
+  .hero-social-actions {
+    display: flex;
+  }
+
+  .social-button {
+    width: 46px;
+    min-width: 46px;
   }
 }
 

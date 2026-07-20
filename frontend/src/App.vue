@@ -6,13 +6,16 @@ import {
   ExternalLink,
   Globe2,
   MapPin,
+  Music2,
   PackageCheck,
   Phone,
+  CirclePlay,
   Send,
   ShieldCheck,
   Sparkles,
   Truck,
   UserRound,
+  Zap,
 } from '@lucide/vue'
 import viltroxLogo from './assets/viltrox-logo-white-cropped.png'
 
@@ -220,14 +223,48 @@ async function handleTrackingLookup() {
           Submit your shipping details once. The team will prepare the package, upload tracking later, and keep the collaboration moving.
         </p>
 
-        <div class="hero-actions">
-          <a class="hero-button" href="#tracking">
-            <PackageCheck :size="19" />
-            Track your shipment
+        <div class="hero-actions hero-social-actions" aria-label="Viltrox social links">
+          <a
+            class="hero-button social-button"
+            href="https://www.instagram.com/viltrox.flash/"
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Viltrox Flash Instagram"
+            title="Viltrox Flash Instagram"
+          >
+            <Camera :size="20" />
+            <Zap :size="13" class="social-mark" />
           </a>
-          <a class="hero-button" href="#affiliate">
-            <Sparkles :size="19" />
-            Earn commission
+          <a
+            class="hero-button social-button"
+            href="https://www.instagram.com/viltrox.official/"
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Viltrox Official Instagram"
+            title="Viltrox Official Instagram"
+          >
+            <Camera :size="20" />
+            <CheckCircle2 :size="13" class="social-mark" />
+          </a>
+          <a
+            class="hero-button social-button"
+            href="https://www.youtube.com/@viltroxofficial"
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Viltrox YouTube"
+            title="Viltrox YouTube"
+          >
+            <CirclePlay :size="22" />
+          </a>
+          <a
+            class="hero-button social-button"
+            href="https://www.tiktok.com/@viltrox.global"
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Viltrox TikTok"
+            title="Viltrox TikTok"
+          >
+            <Music2 :size="21" />
           </a>
         </div>
 
